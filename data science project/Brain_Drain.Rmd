@@ -1,0 +1,198 @@
+---
+title: "Data Science Project ( Brain Drain )"
+Author: "Wejdan Alshateri, Farha, Duaa Suroor"
+output: html_document
+date: "2023-05-15"
+editor_options: 
+  chunk_output_type: console
+output:
+  pdf_document: default
+---
+
+**Brain drain** is a slang term that alludes to the loss of human capital from one area to another or from one industry to another. Brain drain usually happens when skilled individuals and professionals leave the home countries (in most cases, developing nations) and go elsewhere to take advantage of better opportunities. 
+
+# Packages
+
+```{r load-packages, message = FALSE, warning = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(sf)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
+
+```
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+# Data
+
+```{r load-data, message = FALSE}
+
+migration <- read_excel("data/migration.xls")
+tax <- read_excel("data/tax.xls")
+unemployment <- read_excel("data/unemployment.xls")
+education <- read_excel("data/education.xls")
+GDP <- read_excel("data/GDP growth.xls")
+tax <- read_excel("data/tax.xls")
+literacy <- read_excel("data/literacy.xls")
+remittance <- read_excel("data/remittance.xls")
+
+```
+
+# organizing the migration dataset
+
+```{r}
+migration <- migration %>%
+  mutate(across(starts_with("20"), as.character))
+
+migration1 <- migration %>%
+  pivot_longer(cols = starts_with("20"), names_to = "Year", values_to = "migration", values_drop_na = TRUE) %>%
+  select(-starts_with("20"))  # Exclude the original year columns
+
+# Filter the year range from 2015 to 2022
+migration1 <- migration1 %>%
+  filter(as.numeric(Year) >= 2015 & as.numeric(Year) <= 2022)
+
+# Arrange the data
+migration1 <- migration1 %>%
+  arrange(`Country Name`, `Indicator Name`, Year)
+migration1 <- migration1 %>%
+  select(-c(5:44))
+
+view(migration1)
+```
+
+```{r}
+migration1 <- migration1 %>%
+  mutate(Value = as.numeric(Value))
+
+# Compare brain drain trends by country or region
+comparison <- migration1 %>%
+  group_by(`Country Name`) %>%
+  summarize(Average_Migration = mean(Value, na.rm = TRUE),
+            Total_Migration = sum(Value, na.rm = TRUE),
+            Num_Years = n())
+
+# Sort the comparison data by average migration in descending order
+comparison <- comparison %>%
+  arrange(desc(Average_Migration))
+
+
+```
+
+# organizing the unemployment dataset
+
+```{r}
+unemployment1 <- unemployment %>%
+  pivot_longer(cols = starts_with("20"), names_to = "Year", values_to = "unemployment", values_drop_na = TRUE) %>%
+  select(`Country Name`, `Indicator Name`, Year, Unemployment)
+
+# Filter the data for the years 2015 to 2022
+unemployment1 <- unemployment1 %>%
+  filter(as.numeric(Year) >= 2015 & as.numeric(Year) <= 2022)
+unemployment1 <- unemployment1 %>%
+  arrange(`Country Name`, Year)
+```
+
+# organizing the literacy dataset
+
+```{r}
+literacy1 <- literacy %>%
+  pivot_longer(cols = starts_with("20"), names_to = "Year", values_to = "LiteracyRate", values_drop_na = TRUE) %>%
+  select(`Country Name`, `Indicator Name`, Year, LiteracyRate)
+
+literacy1 <- literacy1 %>%
+  filter(as.numeric(Year) >= 2015 & as.numeric(Year) <= 2022)
+
+literacy1 <- literacy1 %>%
+  arrange(`Country Name`, Year)
+
+```
+
+# organizing remittance dataset
+
+```{r}
+remittance1 <- remittance %>%
+  pivot_longer(cols = starts_with("20"), names_to = "Year", values_to = "Remittance", values_drop_na = TRUE) %>%
+  select(`Country Name`, `Indicator Name`, Year, Remittance)
+
+remittance1 <- remittance1 %>%
+  filter(as.numeric(Year) >= 2015 & as.numeric(Year) <= 2022) 
+  remittance1 <- remittance1 %>% arrange(`Country Name`, Year)
+```
+
+# organizing the tax revenue dataset
+
+```{r}
+tax1 <- tax %>%
+  pivot_longer(cols = starts_with("20"), names_to = "Year", values_to = "Tax", values_drop_na = TRUE) %>%
+  select(`Country Name`, `Indicator Name`, Year, Tax)
+
+tax1 <- tax1 %>%
+  filter(as.numeric(Year) >= 2015 & as.numeric(Year) <= 2022) 
+  tax1 <- tax1 %>% arrange(`Country Name`, Year)
+```
+
+# organizing expenditure on education dataset
+
+```{r}
+expenditure <- education %>%
+  pivot_longer(cols = starts_with("20"), names_to = "Year", values_to = "Expenditure on education", values_drop_na = TRUE) %>%
+  select(`Country Name`, `Indicator Name`, Year, `Expenditure on education`)
+
+# Filter the data for the desired years (2015 to 2022)
+expenditure <- expenditure %>%
+  filter(as.numeric(Year) >= 2015 & as.numeric(Year) <= 2022)
+
+# Arrange the data
+expenditure <- expenditure %>%
+  arrange(`Country Name`, Year)
+```
+
+# organizing GDP growth dataset
+
+```{r}
+GDP1 <- GDP %>%
+  pivot_longer(cols = starts_with("20"), names_to = "Year", values_to = "GDP", values_drop_na = TRUE) %>%
+  select(`Country Name`, `Indicator Name`, Year, GDP)
+
+GDP1 <- GDP1 %>%
+  filter(as.numeric(Year) >= 2015 & as.numeric(Year) <= 2022) 
+  GDP1 <- GDP1 %>% arrange(`Country Name`, Year)
+```
+
+# combining all datasets in one dataset called combined_data
+
+```{r}
+combined_data <- bind_rows(expenditure, GDP1, literacy1, migration1, remittance1, tax1, unemployment1)
+
+combined_data <- combined_data %>%
+  arrange(`Country Name`, `Indicator Name`, Year)
+
+# To delete the Country Code and Indicator Code columns
+combined_data <- combined_data %>%
+  select(-`Country Code`, -`Indicator Code`)
+```
+
+```{r}
+# Scatter plot: Migration vs. GDP
+ggplot(combined_data, aes(x = GDP, y = migration)) +
+  geom_point() +
+  labs(x = "GDP", y = "Migration") +
+  ggtitle("Migration vs. GDP Scatter Plot")
+
+# Scatter plot: Migration vs. Literacy Rate
+ggplot(combined_data, aes(x = LiteracyRate, y = migration)) +
+  geom_point() +
+  labs(x = "Literacy Rate", y = "Migration") +
+  ggtitle("Migration vs. Literacy Rate Scatter Plot")
+
+```
+
+```{r}
+
+```
