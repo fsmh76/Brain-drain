@@ -20,13 +20,11 @@ library(sf)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+library(readxl)
 
 
 ```
 
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
 
 # Data
 
@@ -66,9 +64,10 @@ migration1 <- migration1 %>%
 view(migration1)
 ```
 
+
 ```{r}
 migration1 <- migration1 %>%
-  mutate(Value = as.numeric(Value))
+  mutate(Value = as.numeric(migration))
 
 # Compare brain drain trends by country or region
 comparison <- migration1 %>%
@@ -88,7 +87,7 @@ comparison <- comparison %>%
 
 ```{r}
 unemployment1 <- unemployment %>%
-  pivot_longer(cols = starts_with("20"), names_to = "Year", values_to = "unemployment", values_drop_na = TRUE) %>%
+  pivot_longer(cols = starts_with("20"), names_to = "Year", values_to = "Unemployment", values_drop_na = TRUE) %>%
   select(`Country Name`, `Indicator Name`, Year, Unemployment)
 
 # Filter the data for the years 2015 to 2022
@@ -178,6 +177,7 @@ combined_data <- combined_data %>%
   select(-`Country Code`, -`Indicator Code`)
 ```
 
+
 ```{r}
 # Scatter plot: Migration vs. GDP
 ggplot(combined_data, aes(x = GDP, y = migration)) +
@@ -190,7 +190,6 @@ ggplot(combined_data, aes(x = LiteracyRate, y = migration)) +
   geom_point() +
   labs(x = "Literacy Rate", y = "Migration") +
   ggtitle("Migration vs. Literacy Rate Scatter Plot")
-
 ```
 
 ```{r}
